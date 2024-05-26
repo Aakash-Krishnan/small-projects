@@ -1,0 +1,34 @@
+.stars {
+  width: fit-content;
+  padding: 10px;
+  border-radius: 10px;
+
+  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+
+  background-color: rgb(16, 86, 109);
+  color: white;
+  font-size: 50px;
+  cursor: pointer;
+}
+
+.gold {
+  color: gold;
+}
+
+.yellow {
+  color: yellow;
+}
+
+.tomato {
+  color: rgb(233, 108, 86);
+}
+
+#rating {
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 34px;
+  text-align: center;
+}

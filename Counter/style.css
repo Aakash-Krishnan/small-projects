@@ -1,0 +1,31 @@
+.counter {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn {
+  padding: 0 10px;
+  font-size: 30px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background-color: rgb(255, 234, 0);
+}
+
+.btn:hover {
+  background-color: rgb(241, 221, 3);
+}
+
+#count {
+  font-size: 30px;
+}
+
+.reset-container {
+  text-align: center;
+}
+
+#reset {
+  margin-top: 20px;
+}
