@@ -1,7 +1,7 @@
 /**
  * @params {String} name
  * @params {String} dob
- * @params {String} gender
+ * @params {String} gender - "M" for Male, "F" for Female, "O" for Others.
  */
 class Person {
   constructor({ name, dob, gender }) {
@@ -13,12 +13,13 @@ class Person {
     this.pan = null;
     this.isLiked = false;
     this.age = this.getAge();
-    // this.accounts = [];
+    // this.accounts = [];  // TODO: To store multiple accounts of a person.
   }
 
   getAge() {
-    const today = Date.now();
-    const age = today.getFullYear() - this.dob.getFulliYear();
+    const today = new Date();
+    let age = today.getFullYear() - this.dob.getFullYear();
+    const m = today.getMonth() - this.dob.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < this.dob.getDate())) {
       age--;
     }
@@ -28,16 +29,20 @@ class Person {
   createAadhar() {
     if (!this.aadhar) {
       this.aadhar = new Aadhar({ person: this });
+    } else {
+      console.log("Aadhar already exists");
     }
   }
 
   /**
    *
-   * @param {String} type
+   * @param {String} type - (P for Individual, F for Firm, C for Company, H for HUF, A for AOP, T for Trust, etc.).
    */
   createPAN(type = "P") {
     if (!this.pan) {
       this.pan = new PAN({ person: this, type });
+    } else {
+      console.log("PAN already exists");
     }
   }
 
@@ -127,6 +132,12 @@ class PAN {
     return id;
   }
 }
+
+const Aakash = new Person({
+  name: "Aakash Krishna",
+  dob: "2000-11-24",
+  gender: "M",
+});
 
 // console.log("hello");
 
