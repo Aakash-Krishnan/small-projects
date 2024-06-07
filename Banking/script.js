@@ -1,6 +1,3 @@
-const today = new Date();
-console.log(today.getFullYear());
-
 /**
  * @params {String} name
  * @params {String} dob
