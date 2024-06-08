@@ -6,17 +6,14 @@
 class Person {
   constructor({ name, dob, gender }) {
     if (!name || name.length < 3) {
-      console.error("Name should be atleast 3 characters long");
-      return;
+      throw new Error("Name should be atleast 3 characters long");
     }
     if (!dob) {
-      console.error("Date of Birth is required");
-      return;
+      throw new Error("Date of Birth is required");
     }
 
     if (!gender) {
-      console.error("Please provide your gender");
-      return;
+      throw new Error("Please provide your gender");
     }
 
     this.id = `${name}_${Date.now()}`;
@@ -64,32 +61,51 @@ class Person {
 
   linkAadharAndPan() {
     if (this.isLiked) {
-      console.error("Aadhar and PAN are already linked");
-      return;
+      throw new Error("Aadhar and PAN are already linked");
     }
     if (!this.aadhar || !this.pan) {
-      console.error("You need to have both the card before linking.");
-      return;
+      throw new Error("You need to have both the card before linking.");
     }
     this.aadhar.pan = this.pan;
     this.pan.aadhar = this.aadhar;
     this.isLiked = true;
   }
 
+  /**
+   * @params {String} pwd - length > 3
+   * @params {Number} initialDeposit
+   * @params {Bank} selectedBank
+   */
   openBankAccount({ pwd, initialDeposit, selectedBank }) {
-    const bankName = selectedBank.bankName;
+    console.log("selectedBank", selectedBank);
+    if (!(selectedBank instanceof Bank)) throw new Error("Invalid Bank");
+    if (!this.aadhar && !this.pan) {
+      throw new Error("Need to have Aadhar or PAN to open an account");
+    }
+
     const newAccount = new Account({
       userName: this.name,
       pwd,
       initialDeposit,
-      bankName,
+      bankName: selectedBank.bankName,
+      proof: this.aadhar,
     });
     selectedBank.openAccount(newAccount);
     this.account = newAccount;
 
     console.log(`
         ********** ACCOUNT CREATED **************
-        Your Account [${newAccount.accountNo}] has been created in ${bankName} Bank.
+        Your Account [${newAccount.accountNo}] has been created in [${
+      newAccount.bankName
+    }] Bank.
+        ***Account Details***
+              Name:             [${newAccount.userName}],
+              Account Number:   [${newAccount.accountNo}],
+              current Balance:  [Rs ${newAccount.balance}],
+              Bank:             [${newAccount.bankName}],
+              submitted proof:  [${
+                newAccount.hasProof instanceof Aadhar ? "Aadhar" : "PAN"
+              }]
       `);
   }
 }
@@ -104,12 +120,10 @@ class Aadhar {
 
   constructor({ person }) {
     if (!person instanceof Person) {
-      console.error("Invalid Person");
-      return;
+      throw new Error("Invalid Person");
     }
     if (person.aadhar) {
-      console.error("Aadhar already exists");
-      return;
+      throw new Error("Aadhar already exists");
     }
 
     this.id = this.#generateID();
@@ -132,6 +146,10 @@ class Aadhar {
     Aadhar.aadharNumberDB.add(id);
     return id;
   }
+
+  // static validateCard(card) {
+  //   const aadharDetails = Aadhar.personDB.get(card.id);
+  // }
 }
 
 /**
@@ -146,12 +164,10 @@ class PAN {
   constructor({ person, type }) {
     // TODO: To check the instance of the person.
     if (!person instanceof Person) {
-      console.error("Invalid Person");
-      return;
+      throw new Error("Invalid Person");
     }
     if (person.pan) {
-      console.error("PAN already exists");
-      return;
+      throw new Error("PAN already exists");
     }
 
     this.name = person.name;
@@ -181,53 +197,54 @@ class PAN {
   }
 }
 
-const aakash = new Person({
-  name: "Aakash Krishna",
-  dob: "2000-11-24",
-  gender: "M",
-});
-
-aakash.createAadhar();
-aakash.createPAN();
-console.log(aakash);
-
-const sky = new Person({
-  name: "Sky",
-  dob: "2001-01-01",
-  gender: "M",
-});
-
-sky.createAadhar();
-sky.createPAN("F");
-
-console.log(Aadhar.aadharNumberDB);
-console.log(Aadhar.personDB);
-console.log(PAN.personDB);
-
+/**
+ * @params {String} userName
+ * @params {String} pwd
+ * @params {Number} initialDeposit
+ * @params {String} bankName
+ * @params {Aadhar | PAN} proof
+ * @params {String} ifscCode
+ */
 class Account {
   static accountNumberDB = new Set();
 
   #pwd;
-  constructor({ userName, pwd, initialDeposit, bank, ifscCode = null }) {
+  constructor({
+    userName,
+    pwd,
+    initialDeposit,
+    bankName,
+    proof,
+    ifscCode = null,
+  }) {
     if (!userName || userName.length < 3) {
-      console.error("Need more characters for your userName");
-      return;
+      throw new Error("Need more characters for your userName");
     }
     if (!pwd || pwd.length < 3) {
-      console.error("Need more characters in pwd");
-      return;
+      throw new Error("Need more characters in pwd");
     }
     if (isNaN(Number(initialDeposit))) {
-      console.error("Need an initial amount to open an Account");
-      return;
+      throw new Error("Need an initial amount to open an Account");
     }
 
-    this.userName = userName;
+    if (!proof)
+      throw new Error("Need to have an Aadhar or PAN to open an account");
+    if (!(proof instanceof Aadhar) && !(proof instanceof PAN)) {
+      console.log("PROOF", proof);
+      throw new Error("Invalid proof: proof has to be either Aadhar or PAN");
+    }
+    this.userName = this.parseUserName(userName);
     this.#pwd = pwd;
-    this.accountNo = `acc_${userName}_${this.generateId()}`;
+    this.accountNo = this.generateId();
     this.balance = initialDeposit;
-    this.bank = bank;
+    this.bankName = bankName;
+    this.hasProof = proof;
+
     this.ifscCode = ifscCode;
+  }
+
+  parseUserName(userName) {
+    return userName.toLowerCase().split(" ").join("_");
   }
 
   generateId() {
@@ -250,12 +267,10 @@ class Account {
   deposit(amount) {
     const amt = parseInt(amount);
     if (isNaN(amt)) {
-      console.error("Amount needs to be an Number");
-      return;
+      throw new Error("Amount needs to be an Number");
     }
     if (amt < 1) {
-      console.error("Amount needs to be greater than Zero");
-      return;
+      throw new Error("Amount needs to be greater than Zero");
     }
 
     this.balance += amt;
@@ -271,16 +286,13 @@ class Account {
   withdraw(amount) {
     const amt = parseInt(amount);
     if (isNaN(amt)) {
-      console.error("Amount needs to be an Number");
-      return;
+      throw new Error("Amount needs to be an Number");
     }
     if (amt < 1) {
-      console.error("Amount needs to be greater than Zero");
-      return;
+      throw new Error("Amount needs to be greater than Zero");
     }
     if (amt > this.balance) {
-      console.error("Insufficient balance");
-      return;
+      throw new Error("Insufficient balance");
     }
 
     this.balance -= amt;
@@ -297,12 +309,10 @@ class Account {
    */
   transferTo(to, amount, pwd) {
     if (pwd !== this.#pwd) {
-      console.error("Incorrect password");
-      return;
+      throw new Error("Incorrect password");
     }
     if (!(to instanceof Account)) {
-      console.error("Incorrect Account type");
-      return;
+      throw new Error("Incorrect Account type");
     }
     this.withdraw(amount);
     to.deposit(amount);
@@ -318,10 +328,12 @@ class Account {
 }
 
 class Bank {
-  static banksDB = new Set();
+  static banksDB = new Map();
+
   constructor({ bankName }) {
     if (Bank.banksDB.has(bankName)) {
-      console.error("Bank already exists");
+      console.log(Bank.banksDB);
+      throw new Error("Bank already exists");
     }
     Bank.banksDB.add(bankName);
 
@@ -330,13 +342,11 @@ class Bank {
   }
 
   openAccount(account) {
-    if (!account instanceof Account) {
-      console.error("Incorrect Account type");
-      return;
+    if (!(account instanceof Account)) {
+      throw new Error("Incorrect Account type");
     }
     if (this.db.has(account.accountNo)) {
-      console.error("Account already exist");
-      return;
+      throw new Error("Account already exist");
     }
 
     this.db.set(account.accountNo, account);
@@ -345,12 +355,57 @@ class Bank {
 
   getAccountById(id) {
     if (!this.db.has(id)) {
-      console.error("No account found");
-      return;
+      throw new Error("No account found");
     }
     return this.db.get(id);
   }
 }
+
+const hdfc = new Bank({ bankName: "HDFC" });
+const axis = new Bank({ bankName: "AXIS" });
+// console.log(hdfc);
+// console.log(axis);
+
+const aakash = new Person({
+  name: "Aakash Krishna",
+  dob: "2000-11-24",
+  gender: "M",
+});
+
+aakash.createAadhar();
+
+aakash.openBankAccount({
+  pwd: "aa123",
+  initialDeposit: 1000,
+  selectedBank: hdfc,
+});
+
+const sky = new Person({
+  name: "Sky",
+  dob: "2001-01-01",
+  gender: "M",
+});
+
+sky.createAadhar();
+sky.createPAN("F");
+sky.createPAN("F");
+
+sky.openBankAccount({
+  pwd: "sky123",
+  initialDeposit: 15009,
+  selectedBank: axis,
+});
+
+hdfc
+  .getAccountById(aakash.account.accountNo)
+  .transferTo(axis.getAccountById(sky.account.accountNo), 100, "aa123");
+
+// hdfc
+//   .getAccountById(Aakash.accountNo)
+//   .transfer(axis.getAccountById(Sky.accountNo), 100, "aa123");
+
+// Sky.displayBalance();
+// Aakash.displayBalance();
 
 // class Bank {
 //   constructor(bankName) {
@@ -360,17 +415,16 @@ class Bank {
 
 //   openAccount(account) {
 //     if (!(account instanceof Account))
-//       console.error("Incorrect Account type");
-//     if (this.db.has(account.accountNo))
-//       console.error("Account already exist");
-
+//       throw new Error("Incorrect Account type");
+//     if (this.db.hasccount.accountNo))
+//       throw new Error("Account already exist
 //     this.db.set(account.accountNo, account);
 //     return account;
 //   }
 
 //   getAccountById(id) {
-//     if (!this.db.has(id)) console.error("No account found");
-//     return this.db.get(id);
+//     if (!this.db.has(id)) throw new Error("No account found");
+//     return this.db.get(
 //   }
 // }
 
@@ -378,11 +432,10 @@ class Bank {
 //   #pwd;
 //   constructor({ userName, pwd, initialDeposit }) {
 //     if (!userName || userName.length < 3)
-//       console.error("Need more characters for your userName");
-//     if (!pwd || pwd.length < 3) console.error("Need more characters in pwd");
-//     if (isNaN(Number(initialDeposit)))
-//       console.error("Need a an initial amount to open an Account");
-
+//       throw new Error("Need more characters for your userName");
+//     if (!pwd || pwdength < 3) throw new Error("Need more characters in pwd");
+//     if (isNaN(Number(
+//       throw new Error("Need a an initial amount to open an Account
 //     this.userName = userName;
 //     this.#pwd = pwd;
 //     this.accountNo = `acc_${userName}_${Date.now()}`;
@@ -391,9 +444,8 @@ class Bank {
 
 //   deposit(amount) {
 //     const amt = Number(amount);
-//     if (isNaN(amt)) console.error("Amount needs to be an Number");
-//     if (amt < 0) console.error("Amount needs to be greater than Zero");
-
+//     if (isNaN(amt)) throw new Error("Amount needs to be an Number");
+//     if (amt < 0) throw new Errormount needs to be greater than Zero
 //     this.balance += amt;
 
 //     console.log(
@@ -403,10 +455,9 @@ class Bank {
 
 //   withdraw(amount) {
 //     const amt = Number(amount);
-//     if (isNaN(amt)) console.error("Amount needs to be an Number");
-//     if (amt < 0) console.error("Amount needs to be greater than Zero");
-//     if (amt > this.balance) console.error("Insufficient balance");
-
+//     if (isNaN(amt)) throw new Error("Amount needs to be an Number");
+//     if (amt < 0) throw new Errormount needs to be greater than Zero");
+//     if (amt > this.balancew new Error("Insufficient balance
 //     this.balance -= amt;
 
 //     console.log(
@@ -420,9 +471,9 @@ class Bank {
 //    * @params {String} pwd
 //    */
 //   transfer(to, amount, pwd) {
-//     if (pwd !== this.#pwd) console.error("Incorrect password");
-//     if (!(to instanceof Account)) console.error("Incorrect Account type");
-//     this.withdraw(amount);
+//     if (pwd !== this.#pwd) throw new Error("Incorrect password");
+//     if (!(to instanceof Account)) w Error("Incorrect Account type");
+//     this.withdraw(
 //     to.deposit(amount);
 //   }
 
@@ -432,29 +483,3 @@ class Bank {
 //     [${this.userName}] your balance is: ${this.balance}`);
 //   }
 // }
-
-// const hdfc = new Bank("HDFC");
-// const axis = new Bank("AXIS");
-
-// const Aakash = hdfc.openAccount(
-//   new Account({
-//     userName: "Aakash",
-//     pwd: "aa123",
-//     initialDeposit: 900
-//   })
-// );
-
-// const Sky = axis.openAccount(
-//   new Account({
-//     userName: "Sky",
-//     pwd: "sky123",
-//     initialDeposit: 1500
-//   })
-// );
-
-// hdfc
-//   .getAccountById(Aakash.accountNo)
-//   .transfer(axis.getAccountById(Sky.accountNo), 100, "aa123");
-
-// Sky.displayBalance();
-// Aakash.displayBalance();
