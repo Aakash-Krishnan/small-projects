@@ -255,6 +255,7 @@ class Account {
     this.balance = initialDeposit;
     this.bankName = bankName;
     this.hasProof = proof;
+    this.transactionHistory = [];
 
     // this.ifscCode = ifscCode;
   }
@@ -290,9 +291,14 @@ class Account {
     }
 
     this.balance += amt;
-
     console.warn(`
     [${this.userName}]: amount ${amt} has been credited to your account ${this.accountNo}`);
+
+    this.transactionHistory.push({
+      type: "deposit",
+      amt,
+      balance: this.balance,
+    });
   }
 
   /**
@@ -319,6 +325,12 @@ class Account {
       [${this.userName}]: amount ${amt} has been debited from your account ${this.accountNo} for transaction fee`)
       : console.warn(`
     [${this.userName}]: amount ${amt} has been debited from your account ${this.accountNo}`);
+
+    this.transactionHistory.push({
+      type: "withdraw",
+      amt,
+      balance: this.balance,
+    });
   }
 
   /**
@@ -347,6 +359,27 @@ class Account {
       Account Number: ${this.accountNo}
       [${this.userName}] your balance is: ${this.balance}
       `);
+  }
+
+  displayTransactionHistory() {
+    console.log(`******Statement******`);
+    this.transactionHistory.forEach((transaction) => {
+      transaction.type === "deposit"
+        ? console.log(`
+Holder:  [${this.userName}]
+Amount:  Rs ${transaction.amt} 
+    deposited to 
+Account: [${this.accountNo}]
+Balance: Rs ${transaction.balance}
+        `)
+        : console.log(`
+Holder:  [${this.userName}]
+Amount:  Rs ${transaction.amt}
+    widthdrawn from 
+Account: [${this.accountNo}]
+Balance: Rs ${transaction.balance}
+          `);
+    });
   }
 }
 
@@ -389,53 +422,59 @@ class Bank {
 }
 
 // TODO: Convert the functions to front-end.
-Bank.createBank("HDFC");
-Bank.createBank("AXIS");
+// Bank.createBank("HDFC");
+// Bank.createBank("AXIS");
 
 // console.log("BANKS", Bank.banksDB);
-const userX = new Person({
-  name: "User X",
-  dob: "2000-11-24",
-  gender: "M",
-});
+// const userX = new Person({
+//   name: "User X",
+//   dob: "2000-11-24",
+//   gender: "M",
+// });
 
-const userY = new Person({
-  name: "User Y",
-  dob: "2001-01-01",
-  gender: "M",
-});
+// const userY = new Person({
+//   name: "User Y",
+//   dob: "2001-01-01",
+//   gender: "M",
+// });
 
-userX.createAadhar();
+// userX.createAadhar();
 
-userX.openBankAccount({
-  pwd: "aa123",
-  initialDeposit: 1000,
-  selectedBank: Bank.banksDB.get("HDFC"),
-});
+// userX.openBankAccount({
+//   pwd: "ux123",
+//   initialDeposit: 1000,
+//   selectedBank: Bank.banksDB.get("HDFC"),
+// });
 
-userY.createAadhar();
-userY.createPAN("F");
+// userY.createAadhar();
+// userY.createPAN("F");
 
-userY.openBankAccount({
-  pwd: "ux123",
-  initialDeposit: 15009,
-  selectedBank: Bank.banksDB.get("AXIS"),
-});
+// userY.openBankAccount({
+//   pwd: "uy123",
+//   initialDeposit: 15009,
+//   selectedBank: Bank.banksDB.get("AXIS"),
+// });
 
 // TODO: Improve the transTo function to more simplified.
-Bank.banksDB
-  .get("HDFC")
-  .getAccountById(userX.account.accountNo)
-  .transferTo(
-    Bank.banksDB.get("AXIS").getAccountById(userY.account.accountNo),
-    100,
-    "uy123"
-  );
+// Bank.banksDB
+//   .get("HDFC")
+//   .getAccountById(userX.account.accountNo)
+//   .transferTo(
+//     Bank.banksDB.get("AXIS").getAccountById(userY.account.accountNo),
+//     100,
+//     "ux123"
+//   );
 
-userX.account.displayBalance();
-userY.account.displayBalance();
+// userY.linkAadharAndPan();
+// console.log("UserY details", userY.aadhar.pan.aadhar.pan);
 
-let users = Person.getUsers();
+// userX.account.displayBalance();
+// userY.account.displayBalance();
 
-console.log(Bank.banksDB.get("HDFC"));
-console.log("USERS:", users);
+// let users = Person.getUsers();
+
+// console.log(Bank.banksDB.get("HDFC"));
+// console.log("USERS:", users);
+
+// userX.account.displayTransactionHistory();
+// userY.account.displayTransactionHistory();
