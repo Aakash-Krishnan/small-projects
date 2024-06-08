@@ -1,7 +1,7 @@
 // ! TODO: Work on the security levels of the Entities details.
 /**
  * @params {String} name
- * @params {String} dob
+ * @params {String} dob - "yyyy-mm-dd"
  * @params {String} gender - "M" for Male, "F" for Female, "O" for Others.
  */
 class Person {
@@ -57,6 +57,7 @@ class Person {
       this.aadhar = new Aadhar({ person: this });
     } else {
       console.warn("Aadhar already exists");
+      return;
     }
   }
 
@@ -121,14 +122,18 @@ class Person {
               }]
       `);
   }
+
+  static getUsers() {
+    return Person.#usersDB;
+  }
 }
 
 /**
  * @params {Person} person
  */
 class Aadhar {
-  static aadharNumberDB = new Set();
-  static personDB = new Map();
+  // static aadharNumberDB = new Set();
+  static #personDB = new Map();
 
   constructor({ person }) {
     if (!person instanceof Person) {
@@ -143,7 +148,7 @@ class Aadhar {
     this.age = person.age;
     this.pan = null;
 
-    Aadhar.personDB.set(this.id, person);
+    Aadhar.#personDB.set(this.id, person);
   }
 
   #generateID() {
@@ -154,8 +159,8 @@ class Aadhar {
       for (let i = 0; i < 11; i++) {
         id += Math.floor(Math.random() * 9);
       }
-    } while (Aadhar.aadharNumberDB.has(id));
-    Aadhar.aadharNumberDB.add(id);
+    } while (Aadhar.#personDB.has(id));
+    // Aadhar.personDB.add(id);
     return id;
   }
 
@@ -168,10 +173,9 @@ class Aadhar {
  * @params {Person} person
  * @params {String} type
  */
-
 class PAN {
-  static #panNumberDB = new Set();
-  static personDB = new Map();
+  // static #panNumberDB = new Set();
+  static #personDB = new Map();
 
   constructor({ person, type }) {
     // TODO: To check the instance of the person.
@@ -187,7 +191,7 @@ class PAN {
     this.age = person.age;
     this.aadhar = null;
 
-    PAN.personDB.set(this.id, person);
+    PAN.#personDB.set(this.id, person);
   }
 
   #generateID(type) {
@@ -203,8 +207,7 @@ class PAN {
         id += Math.floor(Math.random() * 9);
       }
       id += String.fromCharCode(65 + Math.floor(Math.random() * 26));
-    } while (PAN.#panNumberDB.has(id));
-    PAN.#panNumberDB.add(id);
+    } while (PAN.#personDB.has(id));
     return id;
   }
 }
@@ -219,6 +222,7 @@ class PAN {
  */
 class Account {
   static accountNumberDB = new Set();
+  // static #accountsDB = new Map();
 
   #pwd;
   constructor({
@@ -252,7 +256,7 @@ class Account {
     this.bankName = bankName;
     this.hasProof = proof;
 
-    this.ifscCode = ifscCode;
+    // this.ifscCode = ifscCode;
   }
 
   parseUserName(userName) {
@@ -294,6 +298,7 @@ class Account {
   /**
    *
    * @param {Number} amount
+   * @param {Boolean} transferCharges - default false, if true the transfer charges will be deducted.
    */
   withdraw(amount, transferCharges = false) {
     const amt = parseFloat(amount);
@@ -354,10 +359,9 @@ class Bank {
       console.log(Bank.banksDB);
       throw new Error("Bank already exists");
     }
-    // Bank.banksDB.add(bankName);
 
     this.bankName = bankName;
-    this.db = new Map();
+    this.accountsDB = new Map();
   }
 
   static createBank(bankName) {
@@ -368,19 +372,19 @@ class Bank {
     if (!(account instanceof Account)) {
       throw new Error("Incorrect Account type");
     }
-    if (this.db.has(account.accountNo)) {
+    if (this.accountsDB.has(account.accountNo)) {
       throw new Error("Account already exist");
     }
 
-    this.db.set(account.accountNo, account);
+    this.accountsDB.set(account.accountNo, account);
     return account;
   }
 
   getAccountById(id) {
-    if (!this.db.has(id)) {
+    if (!this.accountsDB.has(id)) {
       throw new Error("No account found");
     }
-    return this.db.get(id);
+    return this.accountsDB.get(id);
   }
 }
 
@@ -388,32 +392,32 @@ class Bank {
 Bank.createBank("HDFC");
 Bank.createBank("AXIS");
 
-console.log("BANKS", Bank.banksDB);
-const aakash = new Person({
-  name: "Aakash Krishnan",
+// console.log("BANKS", Bank.banksDB);
+const userX = new Person({
+  name: "User X",
   dob: "2000-11-24",
   gender: "M",
 });
 
-aakash.createAadhar();
+const userY = new Person({
+  name: "User Y",
+  dob: "2001-01-01",
+  gender: "M",
+});
 
-aakash.openBankAccount({
+userX.createAadhar();
+
+userX.openBankAccount({
   pwd: "aa123",
   initialDeposit: 1000,
   selectedBank: Bank.banksDB.get("HDFC"),
 });
 
-const sky = new Person({
-  name: "Sky",
-  dob: "2001-01-01",
-  gender: "M",
-});
+userY.createAadhar();
+userY.createPAN("F");
 
-sky.createAadhar();
-sky.createPAN("F");
-
-sky.openBankAccount({
-  pwd: "sky123",
+userY.openBankAccount({
+  pwd: "ux123",
   initialDeposit: 15009,
   selectedBank: Bank.banksDB.get("AXIS"),
 });
@@ -421,11 +425,17 @@ sky.openBankAccount({
 // TODO: Improve the transTo function to more simplified.
 Bank.banksDB
   .get("HDFC")
-  .getAccountById(aakash.account.accountNo)
+  .getAccountById(userX.account.accountNo)
   .transferTo(
-    Bank.banksDB.get("AXIS").getAccountById(sky.account.accountNo),
+    Bank.banksDB.get("AXIS").getAccountById(userY.account.accountNo),
     100,
-    "aa123"
+    "uy123"
   );
 
+userX.account.displayBalance();
+userY.account.displayBalance();
+
+let users = Person.getUsers();
+
 console.log(Bank.banksDB.get("HDFC"));
+console.log("USERS:", users);
