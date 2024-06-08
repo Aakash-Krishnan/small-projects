@@ -1,9 +1,12 @@
+// ! TODO: Work on the security levels of the Entities details.
 /**
  * @params {String} name
  * @params {String} dob
  * @params {String} gender - "M" for Male, "F" for Female, "O" for Others.
  */
 class Person {
+  static #usersDB = new Map();
+
   constructor({ name, dob, gender }) {
     if (!name || name.length < 3) {
       throw new Error("Name should be atleast 3 characters long");
@@ -16,7 +19,7 @@ class Person {
       throw new Error("Please provide your gender");
     }
 
-    this.id = `${name}_${Date.now()}`;
+    this.id = this.#generateID(name);
     this.name = name;
     this.dob = new Date(dob);
     this.gender = gender;
@@ -26,6 +29,17 @@ class Person {
     this.age = this.getAge();
     this.account = null;
     // this.accounts = [];  // TODO: To store multiple accounts of a person.
+  }
+
+  #generateID(name) {
+    name = name.toLowerCase().split(" ").join("_");
+    let id;
+    do {
+      id = "";
+      id = `${name}_${Date.now()}`;
+    } while (Person.#usersDB.has(id));
+    Person.#usersDB.set(id, this);
+    return id;
   }
 
   getAge() {
@@ -77,7 +91,6 @@ class Person {
    * @params {Bank} selectedBank
    */
   openBankAccount({ pwd, initialDeposit, selectedBank }) {
-    console.log("selectedBank", selectedBank);
     if (!(selectedBank instanceof Bank)) throw new Error("Invalid Bank");
     if (!this.aadhar && !this.pan) {
       throw new Error("Need to have Aadhar or PAN to open an account");
@@ -113,7 +126,6 @@ class Person {
 /**
  * @params {Person} person
  */
-
 class Aadhar {
   static aadharNumberDB = new Set();
   static personDB = new Map();
@@ -235,7 +247,7 @@ class Account {
     }
     this.userName = this.parseUserName(userName);
     this.#pwd = pwd;
-    this.accountNo = this.generateId();
+    this.accountNo = this.#generateID();
     this.balance = initialDeposit;
     this.bankName = bankName;
     this.hasProof = proof;
@@ -247,7 +259,7 @@ class Account {
     return userName.toLowerCase().split(" ").join("_");
   }
 
-  generateId() {
+  #generateID() {
     let id;
     do {
       id = "";
@@ -333,6 +345,7 @@ class Account {
   }
 }
 
+// TODO: Create a IFSC codes for each banks. By getting number of branches and create a random codes.
 class Bank {
   static banksDB = new Map();
 
@@ -371,6 +384,7 @@ class Bank {
   }
 }
 
+// TODO: Convert the functions to front-end.
 Bank.createBank("HDFC");
 Bank.createBank("AXIS");
 
@@ -404,6 +418,7 @@ sky.openBankAccount({
   selectedBank: Bank.banksDB.get("AXIS"),
 });
 
+// TODO: Improve the transTo function to more simplified.
 Bank.banksDB
   .get("HDFC")
   .getAccountById(aakash.account.accountNo)
@@ -412,3 +427,5 @@ Bank.banksDB
     100,
     "aa123"
   );
+
+console.log(Bank.banksDB.get("HDFC"));
